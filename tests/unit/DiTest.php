@@ -137,7 +137,7 @@ class DiTest_A
         return $this->di;
     }
 
-    public function test(Di $di, $foo = null, $bar = null)
+    static public function test(Di $di, $foo = null, $bar = null)
     {
         return array('di' => $di, 'foo' => $foo, 'bar' => $bar);
     }
