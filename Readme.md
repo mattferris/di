@@ -1,6 +1,8 @@
 DI
 ==
 
+[![Build Status](https://travis-ci.org/mattferris/di.svg?branch=master)](https://travis-ci.org/mattferris/di)
+
 DI is a dependency injection container library for PHP.
 
 Registering Services
