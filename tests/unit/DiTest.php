@@ -101,6 +101,18 @@ class DiTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @depends testInjectConstructor
+     */
+    public function testInjectConsructorWithNoConstructor()
+    {
+        $di = new Di();
+        $class = 'DiTest_B';
+
+        $a = $di->injectConstructor($class, array('di' => '%DI'));
+        $this->assertTrue(is_object($a));
+    }
+
+    /**
      * @depends testInjectStaticMethod
      */
     public function testInjectMethod()
@@ -141,4 +153,8 @@ class DiTest_A
     {
         return array('di' => $di, 'foo' => $foo, 'bar' => $bar);
     }
+}
+
+class DiTest_B
+{
 }

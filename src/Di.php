@@ -207,8 +207,12 @@ class Di implements ContainerInterface
     public function injectConstructor($class, array $args)
     {
         $reflection = new \ReflectionClass($class);
-        $invokeArgs = $this->resolveArguments($reflection->getConstructor(), $args);
-        return $reflection->newInstanceArgs($invokeArgs);
+        if ($reflection->getConstructor() !== null) {
+            $invokeArgs = $this->resolveArguments($reflection->getConstructor(), $args);
+            return $reflection->newInstanceArgs($invokeArgs);
+        } else {
+            return new $class();
+        }
     }
 
     /**
