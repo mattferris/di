@@ -2,6 +2,7 @@ DI
 ==
 
 [![Build Status](https://travis-ci.org/mattferris/di.svg?branch=master)](https://travis-ci.org/mattferris/di)
+[![SensioLabsInsight](https://insight.sensiolabs.com/projects/a88c116a-3019-4573-8fa1-0b844dda22dd/mini.png)](https://insight.sensiolabs.com/projects/a88c116a-3019-4573-8fa1-0b844dda22dd)
 
 DI is a dependency injection container library for PHP.
 
