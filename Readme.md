@@ -59,6 +59,22 @@ You can use `find()` to return all services matching a prefix. This is useful if
         'FTP.host2' => [instance of \FtpService]
     );
 
+### Service Bundles
+
+You can use bundles to isolate service configuration within your domains. A service bundle is any class that implements `MattFerris\Di\BundleInterface`. When registered via `register($bundle)`, the bundle's `register()` method is passed an instance of the container and can then register services.
+
+    class MyBundle extends MattFerris\Di\BundleInterface
+    {
+        public function register(MattFerris\Di\ContainerInterface $di)
+        {
+            $di->set('MyService', function () { ... });
+        }
+    }
+
+    $di->register(new MyBundle());
+
+    $myService = $di->get('MyService');
+
 Defining Parameters
 -------------------
 

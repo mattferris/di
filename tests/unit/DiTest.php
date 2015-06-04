@@ -1,6 +1,8 @@
 <?php
 
 use MattFerris\Di\Di;
+use MattFerris\Di\ContainerInterface;
+use MattFerris\Di\BundleInterface;
 
 class DiTest extends PHPUnit_Framework_TestCase
 {
@@ -133,6 +135,16 @@ class DiTest extends PHPUnit_Framework_TestCase
             return $di;
         }, array('di' => '%DI')), $di);
     }
+
+    /**
+     * @depends testGetSet
+     */
+    public function testRegister()
+    {
+        $di = new Di();
+        $di->register(new DiTest_Bundle());
+        $this->assertInstanceOf('stdClass', $di->get('test'));
+    }
 }
 
 class DiTest_A
@@ -157,4 +169,12 @@ class DiTest_A
 
 class DiTest_B
 {
+}
+
+class DiTest_Bundle implements BundleInterface
+{
+    public function register(ContainerInterface $di)
+    {
+        $di->set('test', new stdClass());
+    }
 }

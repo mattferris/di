@@ -132,6 +132,14 @@ class Di implements ContainerInterface
     }
 
     /**
+     * @param BundleInterface $bundle
+     */
+    public function register(BundleInterface $bundle)
+    {
+        $bundle->register($this);
+    }
+
+    /**
      * @param object $reflection
      * @param array $args
      * @return array
