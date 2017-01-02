@@ -169,26 +169,46 @@ class Di implements ContainerInterface
      */
     protected function resolveArgument($arg)
     {
+        /*
+         * If the argument is an array, recursively resolve the array entries
+         */
         if (is_array($arg)) {
             foreach ($arg as $k => $v) {
                 $arg[$k] = $this->resolveArgument($v);
             }
             $invokeArg = $arg;
-        } elseif (is_string($arg) && strpos($arg, '%') === 0) {
+        }
+
+        /*
+         * If the argument is a placeholder for dependency (i.e. "%service"),
+         * then try and resolve the dependency
+         */
+        elseif (is_string($arg) && strpos($arg, '%') === 0) {
             $ret = $this->get(substr($arg, 1));
             if ($ret !== null) {
                 $invokeArg = $ret;
             } else {
                 $invokeArg = $arg;
             }
-        } elseif (is_string($arg) && strpos($arg, ':') === 0) {
+        }
+
+        /*
+         * If the argument is a placeholder for a parameter (i.e. "%param"),
+         * then try and resolve the parameter
+         */
+        elseif (is_string($arg) && strpos($arg, ':') === 0) {
             $ret = $this->getParameter(substr($arg, 1));
             if ($ret !== null) {
                 $invokeArg = $ret;
             } else {
                 $invokeArg = $arg;
             }
-        } else {
+        }
+
+        /*
+         * The argument is just a regular string, so do nothing
+         */
+        else {
             $invokeArg = $arg;
         }
 
