@@ -166,6 +166,12 @@ class DiTest extends PHPUnit_Framework_TestCase
             return $obj;
         });
         $this->assertEquals($di->get('Baz'), $obj);
+
+        // resolve type based on type-hinted interface
+        $di->set('Foo', function (\MattFerris\Di\ContainerInterface $container) {
+            return $container;
+        });
+        $this->assertEquals($di->get('Foo'), $di);
     }
 
     /**

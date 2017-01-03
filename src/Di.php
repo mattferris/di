@@ -124,10 +124,18 @@ class Di implements ContainerInterface
                 'def' => $definition
             );
 
-            // if the definition is an instance, use it's type
+            // if the definition is an instance, use it's types
             $class = get_class($definition);
             if ($class !== '\Closure') {
                 $type = $class;
+                $ref = new \ReflectionClass($class);
+                $types = $ref->getInterfaceNames();
+                foreach ($types as $t) {
+                    if (!isset($this->types[$t])) {
+                        $this->types[$t] = array();
+                    }
+                    $this->types[$t][] = $key;
+                }
             }
 
             // if $type is specified, set the definition type
@@ -265,7 +273,8 @@ class Di implements ContainerInterface
             if (isset($args[$name]) || array_key_exists($name, $args)) {
                 // resolve parameter based on supplied $args
                 $invokeArgs[] = $this->resolveArgument($args[$name]);
-            } elseif (!is_null($type) && class_exists($type)) {
+            } elseif (!is_null($type) &&
+                (class_exists($type) || interface_exists($type) || trait_exists($type))) {
                 // resolve parameter based on type
                 $invokeArgs[] = $this->resolveType($type);
             }

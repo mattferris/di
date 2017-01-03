@@ -96,7 +96,8 @@ type-hinting the argument.
     });
 
 If a definition exists that has an instance of `\Bar\Service\Class`, it will
-injected into the closure for consumption by your defined service.
+injected into the closure for consumption by your defined service. Likewise, you
+could also specify an interface or a trait name to inject.
 
 If a dependency can't be resolved, a `DependencyResolutionExceptioon` will be
 thrown. The type that couldn't be resolved can be retrieved using the
