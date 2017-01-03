@@ -36,6 +36,17 @@ class DiTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @testGetSet
+     * @expectedException MattFerris\Di\DuplicateDefinitionException
+     * @expectedExceptionMessage Duplicate definition for "DI"
+     */
+    public function testDuplicateDefinitionException()
+    {
+        $di = new Di();
+        $di->set('DI', new stdClass());
+    }
+
+    /**
      * @depends testGetSet
      */
     public function testFind()
@@ -137,6 +148,73 @@ class DiTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @depends testInjectStaticMethod
+     */
+    public function testTypeResolution()
+    {
+        $di = new Di();
+
+        // resolve type based on supplied arguments
+        $this->assertEquals($di->injectFunction(function (Di $di) {
+            return $di;
+        }, array('di' => '\MattFerris\Di\Di')), $di);
+
+        // resolve type based on type-hinted definition closure
+        $obj = new \stdClass();
+        $di->set('Bar', $obj);
+        $di->set('Baz', function (\stdClass $obj) {
+            return $obj;
+        });
+        $this->assertEquals($di->get('Baz'), $obj);
+    }
+
+    /**
+     * @depends testTypeResolution
+     * @expectedException MattFerris\Di\DependencyResolutionException
+     * @expectedExceptionMessage Failed to resolve dependency "stdClass"
+     */
+    public function testDependencyResolutionException()
+    {
+        $di = new Di();
+        $di->set('Foo', function (\stdClass $bar) {
+            return 'baz';
+        });
+        $di->get('Foo');
+    }
+
+    /**
+     * @depends testTypeResolution
+     */
+    public function testDeepTypeResolution()
+    {
+        $di = new Di();
+        $di->setDeepTypeResolution(true);
+
+        $di->set('Foo', function (\DiTest_A $foo) {
+            return $foo;
+        });
+
+        $this->assertEquals(get_class($di->get('Foo')), 'DiTest_A');
+    }
+
+    /**
+     * @depends testDeepTypeResolution
+     * @expectedException MattFerris\Di\DependencyResolutionException
+     * @expectedExceptionMessage Failed to resolve dependency "DiTest_D"
+     */
+    public function testDeepTypeResolutionFailure()
+    {
+        $di = new Di();
+        $di->setDeepTypeResolution(true);
+
+        $di->set('Foo', function (\DiTest_C $foo) {
+            return;
+        });
+
+        $di->get('Foo');
+    }
+
+    /**
      * @depends testGetSet
      */
     public function testRegister()
@@ -169,6 +247,13 @@ class DiTest_A
 
 class DiTest_B
 {
+}
+
+class DiTest_C
+{
+    public function __construct(\DiTest_D $di_d)
+    {
+    }
 }
 
 class DiTest_Bundle implements BundleInterface
