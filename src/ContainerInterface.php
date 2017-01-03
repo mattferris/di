@@ -31,9 +31,16 @@ interface ContainerInterface extends \Interop\Container\ContainerInterface
      * @param string $key
      * @param mixed $definition
      * @param bool $singleton
-     * @return DependencyInjectorInterface
+     * @return self
      */
     public function set($key, $definition, $singleton = false);
+
+    /**
+     * @param string $prefix
+     * @param \Interop\Container\ContainerInterface $container
+     * @return self
+     */
+    public function delegate($prefix, \Interop\Container\ContainerInterface $container);
 
     /**
      * @param string $class

@@ -217,6 +217,27 @@ class DiTest extends PHPUnit_Framework_TestCase
     /**
      * @depends testGetSet
      */
+    public function testDelegation()
+    {
+        $diA = new Di();
+        $diB = new Di();
+        $diA->delegate('Foo', $diB);
+        $diB->set('Foo', new stdClass());
+
+        $this->assertTrue($diA->has('Foo'));
+        $this->assertEquals(get_class($diA->get('Foo')), 'stdClass');
+
+        $diA = new Di();
+        $diB = new Di();
+        $diA->delegate('Foo.', $diB);
+        $diB->set('Foo.Bar', new stdClass());
+
+        $this->assertEquals(get_class($diA->get('Foo.Bar')), 'stdClass');
+    }
+
+    /**
+     * @depends testGetSet
+     */
     public function testRegister()
     {
         $di = new Di();

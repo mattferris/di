@@ -152,6 +152,18 @@ service definitions and configurations.
 The database connection settings can now be defined dynamically. Also notice the
 DB service is defined as a singleton.
 
+Delegation
+----------
+
+Key prefixes can be delegated to other containers for lookup. This allows parts
+of your application, or third party components, to configure their own local
+containers, but plug them into a central container.
+
+    $di->delegate('Foo.', $container);
+
+Now, any key beginning with `Foo.` will be delegated to `$container` for
+handling.
+
 Custom Injection
 ----------------
 

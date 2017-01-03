@@ -44,6 +44,11 @@ class Di implements ContainerInterface
     /**
      * @var array
      */
+    protected $delegates = array();
+
+    /**
+     * @var array
+     */
     protected $parameters = null;
 
     /**
@@ -148,6 +153,13 @@ class Di implements ContainerInterface
      */
     public function get($key)
     {
+        // check if the key is delegated to another container
+        foreach (array_keys($this->delegates) as $prefix) {
+            if (strpos($key, $prefix) === 0) {
+                return $this->delegates[$prefix]->get($key);
+            }
+        }
+
         if (!isset($this->definitions[$key])) {
             return null;
         }
@@ -177,7 +189,26 @@ class Di implements ContainerInterface
      */
     public function has($key)
     {
+        // if key is delegated, ask delegate container
+        foreach (array_keys($this->delegates) as $prefix) {
+            if (strpos($key, $prefix) === 0) {
+                return $this->delegates[$prefix]->has($key);
+            }
+        }
         return isset($this->definitions[$key]);
+    }
+
+    /**
+     * Delegate a key prefix to another container
+     *
+     * @param string $prefix The prefix to delegate
+     * @param \Interop\Container\ContainerInterface $container The delegate
+     * @return self
+     */
+    public function delegate($prefix, \Interop\Container\ContainerInterface $container)
+    {
+        $this->delegates[$prefix] = $container;
+        return $this;
     }
 
     /**
