@@ -43,26 +43,41 @@ interface ContainerInterface extends \Interop\Container\ContainerInterface
     public function delegate($prefix, \Interop\Container\ContainerInterface $container);
 
     /**
-     * @param string $class
-     * @param string $method
-     * @param array $args
-     * @return mixed
+     * Invoke a static method using injected argument values.
+     *
+     * @param string $class The class which the method belongs to
+     * @param string $method The method to invoke
+     * @param array $args Optional array of arguments to use for injection
+     * @return mixed The value returned by the invoked method
      */
-    public function injectStaticMethod($class, $method, array $args);
+    public function injectStaticMethod($class, $method, array $args = array());
 
     /**
-     * @param string $class
-     * @param array $args
-     * @return object
+     * Invoke a constructor using injected argument values.
+     *
+     * @param string $class The class which the constructor belongs to
+     * @param array $args Optional array of arguments to use for injection
+     * @return object The instance returned by the invoked constructor
      */
-    public function injectConstructor($class, array $args);
+    public function injectConstructor($class, array $args = array());
 
     /**
-     * @param object $instance
-     * @param string $method
-     * @param array $args
-     * @return mixed
+     * Invoke a method using injected argument values.
+     *
+     * @param object $instance The object which the method belongs to
+     * @param string $method The method to invoke
+     * @param array $args Optional array of arguments to use for injection
+     * @return mixed The value returned by the invoked method
      */
-    public function injectMethod($instance, $method, array $args);
+    public function injectMethod($instance, $method, array $args = array());
+
+    /**
+     * Invoke a function using injected argument values.
+     *
+     * @param mixed $function The function to invoke
+     * @param array $args Optional array of arguments to use for injection
+     * @return mixed The value returned by the invoked function
+     */
+    public function injectFunction($function, array $args = array());
 }
 

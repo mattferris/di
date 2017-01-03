@@ -380,12 +380,7 @@ class Di implements ContainerInterface
     }
 
     /**
-     * Invoke a static method using injected argument values.
-     *
-     * @param string $class The class which the method belongs to
-     * @param string $method The method to invoke
-     * @param array $args Optional array of arguments to use for injection
-     * @return mixed The value returned by the invoked method
+     * {@inheritDoc}
      */
     public function injectStaticMethod($class, $method, array $args = array())
     {
@@ -394,11 +389,7 @@ class Di implements ContainerInterface
     }
 
     /**
-     * Invoke a constructor using injected argument values.
-     *
-     * @param string $class The class which the constructor belongs to
-     * @param array $args Optional array of arguments to use for injection
-     * @return object The instance returned by the invoked constructor
+     * {@inheritDoc}
      */
     public function injectConstructor($class, array $args = array())
     {
@@ -412,12 +403,7 @@ class Di implements ContainerInterface
     }
 
     /**
-     * Invoke a method using injected argument values.
-     *
-     * @param object $instance The object which the method belongs to
-     * @param string $method The method to invoke
-     * @param array $args Optional array of arguments to use for injection
-     * @return mixed The value returned by the invoked method
+     * {@inheritDoc}
      */
     public function injectMethod($instance, $method, array $args = array())
     {
@@ -432,11 +418,7 @@ class Di implements ContainerInterface
     }
 
     /**
-     * Invoke a function using injected argument values.
-     *
-     * @param mixed $function The function to invoke
-     * @param array $args Optional array of arguments to use for injection
-     * @return mixed The value returned by the invoked function
+     * {@inheritDoc}
      */
     public function injectFunction($function, array $args = array())
     {
