@@ -46,9 +46,28 @@ class Di implements ContainerInterface
      */
     protected $parameters = null;
 
+    /**
+     * @var bool Use deep type resolution; yes if true, no if false (default no)
+     */
+    protected $useDeepTypeResolution;
+
     public function __construct()
     {
         $this->set('DI', $this);
+    }
+
+    /**
+     * Enable/disable deep type resolution on or off. By default, this feature
+     * is disabled. If enabled, when Di can't find a definition for a particular
+     * type, it will attempt to instantiate a new instance of the type
+     * automatically and use this instance for injection.
+     *
+     * @param bool $status True to enable, false to disable
+     * @return self
+     */
+    public function setDeepTypeResolution($status)
+    {
+        $this->useDeepTypeResolution = (bool)$status;
     }
 
     /**
@@ -202,9 +221,14 @@ class Di implements ContainerInterface
             $name = $param->getName();
 
             $type = null;
-            $class = $param->getClass();
-            if (!is_null($class)) {
-                $type= $class->getName();
+            try {
+                $class = $param->getClass();
+                if (!is_null($class)) {
+                    $type= $class->getName();
+                }
+            } catch (\ReflectionException $e) {
+                $words = explode(' ', $e->getMessage());
+                throw new DependencyResolutionException($words[1]);
             }
 
             if (isset($args[$name]) || array_key_exists($name, $args)) {
@@ -304,6 +328,8 @@ class Di implements ContainerInterface
                 $def = $this->types[$type][0];
                 $object = $this->get($def);
             } 
+        } elseif ($this->useDeepTypeResolution) {
+            $object = $this->injectConstructor($type);
         }
 
         if (is_null($object)) {

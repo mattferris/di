@@ -102,6 +102,13 @@ If a dependency can't be resolved, a `DependencyResolutionExceptioon` will be
 thrown. The type that couldn't be resolved can be retrieved using the
 `DependencyResolutionException::getType()` method.
 
+Optionally, `Di` can use deep resolution of a dependency. This can be enabled
+by calling `$di->setDeepTypeResolution(true)`. When enabled, for type-based
+dependencies that can't be satisfied using definitions within the container,
+`Di` will attempt to instantiate an new instance of the type directly and use
+the new instance to satisfy the dependency. Constructor arguments will attempt
+to be satisfied using dependency injection as well.
+
 ### Service Bundles
 
 You can use bundles to isolate service configuration within your domains. A

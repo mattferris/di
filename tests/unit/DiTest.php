@@ -183,6 +183,38 @@ class DiTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @depends testTypeResolution
+     */
+    public function testDeepTypeResolution()
+    {
+        $di = new Di();
+        $di->setDeepTypeResolution(true);
+
+        $di->set('Foo', function (\DiTest_A $foo) {
+            return $foo;
+        });
+
+        $this->assertEquals(get_class($di->get('Foo')), 'DiTest_A');
+    }
+
+    /**
+     * @depends testDeepTypeResolution
+     * @expectedException MattFerris\Di\DependencyResolutionException
+     * @expectedExceptionMessage Failed to resolve dependency "DiTest_D"
+     */
+    public function testDeepTypeResolutionFailure()
+    {
+        $di = new Di();
+        $di->setDeepTypeResolution(true);
+
+        $di->set('Foo', function (\DiTest_C $foo) {
+            return;
+        });
+
+        $di->get('Foo');
+    }
+
+    /**
      * @depends testGetSet
      */
     public function testRegister()
@@ -215,6 +247,13 @@ class DiTest_A
 
 class DiTest_B
 {
+}
+
+class DiTest_C
+{
+    public function __construct(\DiTest_D $di_d)
+    {
+    }
 }
 
 class DiTest_Bundle implements BundleInterface
