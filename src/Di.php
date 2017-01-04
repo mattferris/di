@@ -17,7 +17,7 @@ namespace MattFerris\Di;
 use MattFerris\Provider\ConsumerInterface;
 use MattFerris\Provider\ProviderInterface;
 
-class Di implements ContainerInterface, ConsumerInterface;
+class Di implements ContainerInterface, ConsumerInterface
 {
     /**
      * @const bool
@@ -242,7 +242,7 @@ class Di implements ContainerInterface, ConsumerInterface;
      */
     public function register(ProviderInterface $provider)
     {
-        $provider->register($this);
+        $provider->provides($this);
     }
 
     /**

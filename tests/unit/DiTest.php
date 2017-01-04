@@ -2,7 +2,7 @@
 
 use MattFerris\Di\Di;
 use MattFerris\Di\ContainerInterface;
-use MattFerris\Di\BundleInterface;
+use MattFerris\Provider\ProviderInterface;
 
 class DiTest extends PHPUnit_Framework_TestCase
 {
@@ -247,7 +247,7 @@ class DiTest extends PHPUnit_Framework_TestCase
     public function testRegister()
     {
         $di = new Di();
-        $di->register(new DiTest_Bundle());
+        $di->register(new DiTest_Provider());
         $this->assertInstanceOf('stdClass', $di->get('test'));
     }
 }
@@ -283,10 +283,10 @@ class DiTest_C
     }
 }
 
-class DiTest_Bundle implements BundleInterface
+class DiTest_Provider implements ProviderInterface
 {
-    public function register(ContainerInterface $di)
+    public function provides($consumer)
     {
-        $di->set('test', new stdClass());
+        $consumer->set('test', new stdClass());
     }
 }
