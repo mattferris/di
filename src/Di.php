@@ -14,7 +14,10 @@
 
 namespace MattFerris\Di;
 
-class Di implements ContainerInterface
+use MattFerris\Provider\ConsumerInterface;
+use MattFerris\Provider\ProviderInterface;
+
+class Di implements ContainerInterface, ConsumerInterface;
 {
     /**
      * @const bool
@@ -235,11 +238,11 @@ class Di implements ContainerInterface
     }
 
     /**
-     * @param BundleInterface $bundle
+     * {@inheritDoc}
      */
-    public function register(BundleInterface $bundle)
+    public function register(ProviderInterface $provider)
     {
-        $bundle->register($this);
+        $provider->register($this);
     }
 
     /**
