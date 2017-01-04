@@ -155,7 +155,7 @@ You can define parameters for any service definitions to use via
 `setParameter()` and `getParameter()`. This allows you to create more dynamic
 service definitions and configurations.
 
-``php
+```php
 $di->setParameter('db', array(
     'user' => 'joe',
     'pass' => 'p4ssw0rd',
