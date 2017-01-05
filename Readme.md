@@ -10,10 +10,11 @@ Registering Services
 --------------------
 
 To start out, create an instance of `MattFerris\Di\Di`. Use the `set()` method
-to register services. Closures (anonymous functions) are used to return an
-instance of the service and accomplish any appropriate intialization. You can
-get an instance of the container by specifying an argument named `$di`, or by
-specyfing any argument with a type-hint of `MattFerris\Di\Di`.
+to register services, passing an instance of the service, or use a Closure are
+used to return an instance of the service and accomplish any appropriate
+intialization. You can get an instance of the container by specifying an
+argument named `$di`, or by specyfing any argument with a type-hint of
+`MattFerris\Di\Di` or `MattFerris\Di\ContainerInterface`.
 
 ```php
 use MattFerris\Di\Di;
@@ -21,11 +22,10 @@ use MattFerris\Di\Di;
 $di = new Di();
 
 // register 'FooService'
-$di->set('FooService', function ($di) {
-    return new \FooService($di);
+$di->set('FooService', return new \FooService());
 });
 
-// register `FooService` using type-hinted argument
+// register `BarService` using type-hinted argument
 $di->set('FooService', function (Di $container) {
     return new \FooService($container);
 });
@@ -37,7 +37,7 @@ An instance of the service can now be retrieved via `get()`.
 $fooService = $di->get('FooService');
 ```
 
-Each request for the service will return a new instance of `FooService`. By
+Each request for the service will return the same instance of `FooService`. By
 default, all definitions are singletons. A third argument can be used to disable
 this behaviour.
 
@@ -47,20 +47,29 @@ $di->set('FooService', function ($di) {
 }, Di::NON_SINGLETON);
 ```
 
-The closure now checks to see if an instance of `FooService` exists, and if so
-it will return it. If an instance doesn't exist, it will be created, stored and
-returned.
+Now every call to `$di->get('FooService')` will return a new instance of
+`\FooService()`;
 
-If you service relies on another service, a reference to the other service can
-easily be retrieved from within the definition.
+If your service relies on another service, a reference to the other service can
+easily be retrieved from within the definition either by manually retrieving it
+from the container or by having it injected.
 
 ```php
+// manually retrieve an instance of FooService
 $di->set('BarService', function ($di) {
-    return new \BarService($di->get('FooService'));
+    $fooService = $di->get('FooService');
+    return new \BarService($fooService);
 });
+
+// inject an instance of FooService
+$di->set('BarService', function (\FooService $fooService) {
+    return new \BarService($fooService);
+});
+```
 
 You can check if a service has been defined using `has()`.
 
+```php
 if ($di->has('FooService')) {
     echo 'Yay!';
 }
@@ -68,9 +77,9 @@ if ($di->has('FooService')) {
 
 You can use `find()` to return all services matching a prefix. This is useful if
 you have multiple services of a similar type and their definitions are named 
-imilarly. For example, if you two remote FTP servers and you wanted to save a
-file to both of them, you could register the FTP services as `FTP.host1' and
-`FTP.host2`. Using `find()` to pull instances of these services allows you
+similarly. For example, if you have two remote FTP servers and you wanted to
+save a file to both of them, you could register the FTP services as `FTP.host1'
+and `FTP.host2`. Using `find()` to pull instances of these services allows you
 application to remain host agnostic, allow you to seamlessly configure
 additional hosts in the future.
 
@@ -82,18 +91,18 @@ foreach ($services as $key => $service) {
 }
 ```
 
-`$services` in this case would look like:
+`$services` would look like:
 
 ```php
 array(
     'FTP.host1' => [instance of \FtpService],
     'FTP.host2' => [instance of \FtpService]
-);
+)
 ```
 
 If you attempt to set a definition using a key that already exists, a
 `DuplicateDefinitionException` will be throw. The duplicate key can be retrieved
-using the `DuplicateDefinitionExeption::getKey()` method.
+using the `DuplicateDefinitionException::getKey()` method.
 
 ### Type-Based Injection
 
@@ -137,7 +146,8 @@ class MyProvider extends MattFerris\Di\ServiceProvider
 {
     public function provides($consumer)
     {
-        parent::provides($consumer); // validate $consumer
+        // validate consumer is an instance of \MattFerris\Di\ContainerInterface
+        parent::provides($consumer);
 
         $di->set('MyService', function () { ... });
     }
@@ -273,4 +283,5 @@ $object = $di->injectConstructor(
 );
 ```
 
-Argument values string with a backslash are assumed to be type-hinted arguments.
+Argument values starting with a backslash are assumed to be type-hinted
+arguments.
