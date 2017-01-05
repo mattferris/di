@@ -129,7 +129,7 @@ class Di implements ContainerInterface, ConsumerInterface
 
             // if the definition is an instance, use it's types
             $class = get_class($definition);
-            if ($class !== '\Closure') {
+            if ($class !== 'Closure') {
                 $type = $class;
                 $ref = new \ReflectionClass($class);
                 $types = $ref->getInterfaceNames();
