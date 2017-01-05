@@ -2,7 +2,7 @@
 
 use MattFerris\Di\Di;
 use MattFerris\Di\ContainerInterface;
-use MattFerris\Di\BundleInterface;
+use MattFerris\Provider\ProviderInterface;
 
 class DiTest extends PHPUnit_Framework_TestCase
 {
@@ -33,6 +33,17 @@ class DiTest extends PHPUnit_Framework_TestCase
         unset($obj);
         $obj = $di->get('Test');
         $this->assertEquals($obj->foo, 'bar');
+    }
+
+    /**
+     * @testGetSet
+     * @expectedException MattFerris\Di\DuplicateDefinitionException
+     * @expectedExceptionMessage Duplicate definition for "DI"
+     */
+    public function testDuplicateDefinitionException()
+    {
+        $di = new Di();
+        $di->set('DI', new stdClass());
     }
 
     /**
@@ -137,12 +148,106 @@ class DiTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @depends testInjectStaticMethod
+     */
+    public function testTypeResolution()
+    {
+        $di = new Di();
+
+        // resolve type based on supplied arguments
+        $this->assertEquals($di->injectFunction(function (Di $di) {
+            return $di;
+        }, array('di' => '\MattFerris\Di\Di')), $di);
+
+        // resolve type based on type-hinted definition closure
+        $obj = new \stdClass();
+        $di->set('Bar', $obj);
+        $di->set('Baz', function (\stdClass $obj) {
+            return $obj;
+        });
+        $this->assertEquals($di->get('Baz'), $obj);
+
+        // resolve type based on type-hinted interface
+        $di->set('Foo', function (\MattFerris\Di\ContainerInterface $container) {
+            return $container;
+        });
+        $this->assertEquals($di->get('Foo'), $di);
+    }
+
+    /**
+     * @depends testTypeResolution
+     * @expectedException MattFerris\Di\DependencyResolutionException
+     * @expectedExceptionMessage Failed to resolve dependency "stdClass"
+     */
+    public function testDependencyResolutionException()
+    {
+        $di = new Di();
+        $di->set('Foo', function (\stdClass $bar) {
+            return 'baz';
+        });
+        $di->get('Foo');
+    }
+
+    /**
+     * @depends testTypeResolution
+     */
+    public function testDeepTypeResolution()
+    {
+        $di = new Di();
+        $di->setDeepTypeResolution(true);
+
+        $di->set('Foo', function (\DiTest_A $foo) {
+            return $foo;
+        });
+
+        $this->assertEquals(get_class($di->get('Foo')), 'DiTest_A');
+    }
+
+    /**
+     * @depends testDeepTypeResolution
+     * @expectedException MattFerris\Di\DependencyResolutionException
+     * @expectedExceptionMessage Failed to resolve dependency "DiTest_D"
+     */
+    public function testDeepTypeResolutionFailure()
+    {
+        $di = new Di();
+        $di->setDeepTypeResolution(true);
+
+        $di->set('Foo', function (\DiTest_C $foo) {
+            return;
+        });
+
+        $di->get('Foo');
+    }
+
+    /**
+     * @depends testGetSet
+     */
+    public function testDelegation()
+    {
+        $diA = new Di();
+        $diB = new Di();
+        $diA->delegate('Foo', $diB);
+        $diB->set('Foo', new stdClass());
+
+        $this->assertTrue($diA->has('Foo'));
+        $this->assertEquals(get_class($diA->get('Foo')), 'stdClass');
+
+        $diA = new Di();
+        $diB = new Di();
+        $diA->delegate('Foo.', $diB);
+        $diB->set('Foo.Bar', new stdClass());
+
+        $this->assertEquals(get_class($diA->get('Foo.Bar')), 'stdClass');
+    }
+
+    /**
      * @depends testGetSet
      */
     public function testRegister()
     {
         $di = new Di();
-        $di->register(new DiTest_Bundle());
+        $di->register(new DiTest_Provider());
         $this->assertInstanceOf('stdClass', $di->get('test'));
     }
 }
@@ -171,10 +276,17 @@ class DiTest_B
 {
 }
 
-class DiTest_Bundle implements BundleInterface
+class DiTest_C
 {
-    public function register(ContainerInterface $di)
+    public function __construct(\DiTest_D $di_d)
     {
-        $di->set('test', new stdClass());
+    }
+}
+
+class DiTest_Provider implements ProviderInterface
+{
+    public function provides($consumer)
+    {
+        $consumer->set('test', new stdClass());
     }
 }
