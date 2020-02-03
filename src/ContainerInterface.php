@@ -14,7 +14,9 @@
 
 namespace MattFerris\Di;
 
-interface ContainerInterface extends \Interop\Container\ContainerInterface
+use Psr\Container\ContainerInterface as PsrContainerInterface;
+
+interface ContainerInterface extends PsrContainerInterface
 {
     /**
      * @param array $parameters
@@ -37,10 +39,10 @@ interface ContainerInterface extends \Interop\Container\ContainerInterface
 
     /**
      * @param string $prefix
-     * @param \Interop\Container\ContainerInterface $container
+     * @param \Psr\Container\ContainerInterface $container
      * @return self
      */
-    public function delegate($prefix, \Interop\Container\ContainerInterface $container);
+    public function delegate($prefix, \Psr\Container\ContainerInterface $container);
 
     /**
      * Invoke a static method using injected argument values.
