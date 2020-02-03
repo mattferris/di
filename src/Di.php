@@ -213,10 +213,10 @@ class Di implements ContainerInterface, ConsumerInterface
      * Delegate a key prefix to another container
      *
      * @param string $prefix The prefix to delegate
-     * @param \Interop\Container\ContainerInterface $container The delegate
+     * @param \Psr\Container\ContainerInterface $container The delegate
      * @return self
      */
-    public function delegate($prefix, \Interop\Container\ContainerInterface $container)
+    public function delegate($prefix, \Psr\Container\ContainerInterface $container)
     {
         $this->delegates[$prefix] = $container;
         return $this;

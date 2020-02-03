@@ -6,7 +6,7 @@
         "psr-4": {"MattFerris\\Di\\": "src/"}
     },
     "require": {
-        "container-interop/container-interop": "~1.0",
+        "psr/container": "~1.0",
         "mattferris/provider": "~0.3"
     },
     "require-dev": {
