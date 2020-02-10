@@ -47,6 +47,17 @@ class DiTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @testGetSet
+     * @expectedException MattFerris\Di\NotFoundException
+     * @expectedExceptionMessage No definition found for "foo"
+     */
+    public function testNotFoundException()
+    {
+        $di = new Di();
+        $di->get('foo');
+    }
+
+    /**
      * @depends testGetSet
      */
     public function testFind()

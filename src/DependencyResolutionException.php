@@ -15,8 +15,9 @@
 namespace MattFerris\Di;
 
 use Exception;
+use Psr\Container\ContainerExceptionInterface;
 
-class DependencyResolutionException extends Exception
+class DependencyResolutionException extends Exception implements ContainerExceptionInterface
 {
     /**
      * @var string The definition type

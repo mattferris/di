@@ -171,8 +171,9 @@ class Di implements ContainerInterface, ConsumerInterface
             }
         }
 
+        // PSR 11 requires that we throw an exception if $key doesn't exist
         if (!isset($this->definitions[$key])) {
-            return null;
+            throw new NotFoundException($key);
         }
 
         $def = $this->definitions[$key];
