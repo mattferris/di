@@ -59,6 +59,16 @@ class Di implements ContainerInterface, ConsumerInterface
      */
     protected $useDeepTypeResolution;
 
+    /**
+     * @var array Callbacks for new keys
+     */
+    protected $keyCallbacks = array();
+
+    /**
+     * @var array Callbacks for types
+     */
+    protected $typeCallbacks = array();
+
     public function __construct()
     {
         $this->set('DI', $this);
@@ -104,6 +114,49 @@ class Di implements ContainerInterface, ConsumerInterface
     }
 
     /**
+     * @param string $key
+     * @param callback $callback
+     */
+    public function addKeyCallback($key, callable $callback)
+    {
+        if (!isset($this->keyCallbacks[$key])) $this->keyCallbacks[$key] = [];
+        $this->keyCallbacks[$key][] = $callback;
+    }
+
+    /**
+     * @param string $key
+     */
+    public function callKeyCallbacks($key)
+    {
+        if (!isset($this->keyCallbacks[$key])) return;
+        foreach ($this->keyCallbacks[$key] as $c) {
+            call_user_func($c, $this->get($key), $key);
+        }
+    }
+
+    /**
+     * @param string $type
+     * @param callback $callback
+     */
+    public function addTypeCallback($type, callable $callback)
+    {
+        if (!isset($this->typeCallbacks[$type])) $this->typeCallbacks[$type] = [];
+        $this->typeCallbacks[$type][] = $callback;
+    }
+
+    /**
+     * @param string $type
+     * @param string $key
+     */
+    public function callTypeCallbacks($type, $key)
+    {
+        if (!isset($this->typeCallbacks[$type])) return;
+        foreach ($this->typeCallbacks[$type] as $c) {
+            call_user_func($c, $key, $type);
+        }
+    }
+
+    /**
      * Setup a container definition. By default, all definitions are singletons,
      * but this can be changed via the $singleton aregument. Additionally, an
      * optional fourth argument, $type, can be specified to assist with type-
@@ -138,6 +191,7 @@ class Di implements ContainerInterface, ConsumerInterface
                         $this->types[$t] = array();
                     }
                     $this->types[$t][] = $key;
+                    $this->callTypeCallbacks($type, $key);
                 }
             }
 
@@ -150,11 +204,13 @@ class Di implements ContainerInterface, ConsumerInterface
                 }
 
                 $this->types[$type][] = $key;
+                $this->callTypeCallbacks($type, $key);
             }
         } else {
             throw new DuplicateDefinitionException($key);
         }
 
+        $this->callKeyCallbacks($key);
         return $this;
     }
 

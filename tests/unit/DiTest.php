@@ -35,6 +35,38 @@ class DiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($obj->foo, 'bar');
     }
 
+    public function testAddKeyCallback()
+    {
+        $foo = null;
+        $bar = function($obj, $key) use (&$foo) {
+            $foo = $obj;
+            $foo->key = $key;
+        };
+
+        $di = new Di();
+        $di->addKeyCallback('baz', $bar);
+        $di->set('baz', new stdClass());
+
+        $this->assertInstanceOf('stdClass', $foo);
+        $this->assertEquals('baz', $foo->key);
+    }
+
+    public function testAddTypeCallback()
+    {
+        $foo = new stdClass();
+        $bar = function($key, $type) use ($foo) {
+            $foo->key = $key;
+            $foo->type = $type;
+        };
+
+        $di = new Di();
+        $di->addTypeCallback(DiTest_B::class, $bar);
+        $di->set('baz', new DiTest_B());
+
+        $this->assertEquals('baz', $foo->key);
+        $this->assertEquals('DiTest_B', $foo->type);
+    }
+
     /**
      * @testGetSet
      * @expectedException MattFerris\Di\DuplicateDefinitionException
