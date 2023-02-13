@@ -5,7 +5,7 @@
  * www.bueller.ca/di
  *
  * ContainerInterface.php
- * @copyright Copyright (c) 2015 Matt Ferris
+ * @copyright Copyright (c) 2023 Matt Ferris
  * @author Matt Ferris <matt@bueller.ca>
  *
  * Licensed under BSD 2-clause license
@@ -27,7 +27,7 @@ interface ContainerInterface extends PsrContainerInterface
      * @param string $key
      * @return mixed
      */
-    public function getParameter($key);
+    public function getParameter(string $key);
 
     /**
      * @param string $key
@@ -35,14 +35,14 @@ interface ContainerInterface extends PsrContainerInterface
      * @param bool $singleton
      * @return self
      */
-    public function set($key, $definition, $singleton = false);
+    public function set(string $key, $definition, bool $singleton = false);
 
     /**
      * @param string $prefix
      * @param \Psr\Container\ContainerInterface $container
      * @return self
      */
-    public function delegate($prefix, \Psr\Container\ContainerInterface $container);
+    public function delegate(string $prefix, PsrContainerInterface $container);
 
     /**
      * Invoke a static method using injected argument values.
@@ -52,7 +52,7 @@ interface ContainerInterface extends PsrContainerInterface
      * @param array $args Optional array of arguments to use for injection
      * @return mixed The value returned by the invoked method
      */
-    public function injectStaticMethod($class, $method, array $args = array());
+    public function injectStaticMethod(string $class, string $method, array $args = array());
 
     /**
      * Invoke a constructor using injected argument values.
@@ -61,7 +61,7 @@ interface ContainerInterface extends PsrContainerInterface
      * @param array $args Optional array of arguments to use for injection
      * @return object The instance returned by the invoked constructor
      */
-    public function injectConstructor($class, array $args = array());
+    public function injectConstructor(string $class, array $args = array());
 
     /**
      * Invoke a method using injected argument values.
@@ -71,7 +71,7 @@ interface ContainerInterface extends PsrContainerInterface
      * @param array $args Optional array of arguments to use for injection
      * @return mixed The value returned by the invoked method
      */
-    public function injectMethod($instance, $method, array $args = array());
+    public function injectMethod(object $instance, string $method, array $args = array());
 
     /**
      * Invoke a function using injected argument values.

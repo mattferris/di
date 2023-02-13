@@ -4,34 +4,45 @@ DI
 [![Build Status](https://travis-ci.org/mattferris/di.svg?branch=master)](https://travis-ci.org/mattferris/di)
 [![SensioLabsInsight](https://insight.sensiolabs.com/projects/a88c116a-3019-4573-8fa1-0b844dda22dd/mini.png)](https://insight.sensiolabs.com/projects/a88c116a-3019-4573-8fa1-0b844dda22dd)
 
-DI is a dependency injection container library for PHP.
+DI is a dependency injection container library for PHP that is compatible with 
+[PSR-11](https://www.php-fig.org/psr/psr-11/).
 
 Registering Services
 --------------------
 
 To start out, create an instance of `MattFerris\Di\Di`. Use the `set()` method
-to register services, passing an instance of the service, or use a Closure are
-used to return an instance of the service and accomplish any appropriate
-intialization. You can get an instance of the container by specifying an
-argument named `$di`, or by specyfing any argument with a type-hint of
-`MattFerris\Di\Di` or `MattFerris\Di\ContainerInterface`.
+to register services, passing an instance of the service, a class name, or a
+Closure (essentially a instance factory). You can get an instance of the
+container by specifying an argument named `$di`, or by specyfing any argument
+with a type-hint of `MattFerris\Di\Di`, `MattFerris\Di\ContainerInterface`,
+or `Psr\Container\ContainerInterface`.
 
 ```php
 use MattFerris\Di\Di;
 
 $di = new Di();
 
-// register 'FooService'
-$di->set('FooService', return new \FooService());
+// register 'FooService' with an existing instance
+$di->set('FooService', new \FooService());
 });
 
 // register `BarService` using type-hinted argument
 $di->set('FooService', function (Di $container) {
     return new \FooService($container);
 });
+
+// register `BazService` using a class name
+$di->set('BazService, \BazService::class);
+
+// register `BazService` with custom parameters to inject into the constructor
+$di->set('BazService, \BazService::class, true, null, [ 'foo' => 'bar' ]);
 ```
 
-An instance of the service can now be retrieved via `get()`.
+An instance of the service can now be retrieved via `get()`. When using a
+class name to register a service, the container will automatically build a
+factory closure that calls `Di::injectConstructor()` for the class which
+will let the container automatically inject the dependencies for the class.
+
 
 ```php
 $fooService = $di->get('FooService');

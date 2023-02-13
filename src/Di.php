@@ -5,7 +5,7 @@
  * www.bueller.ca/di
  *
  * Di.php
- * @copyright Copyright (c) 2015 Matt Ferris
+ * @copyright Copyright (c) 2023 Matt Ferris
  * @author Matt Ferris <matt@bueller.ca>
  *
  * Licensed under BSD 2-clause license
@@ -14,8 +14,14 @@
 
 namespace MattFerris\Di;
 
+use InvalidArgumentException;
+use ReflectionClass;
+use ReflectionFunction;
+use ReflectionMethod;
 use MattFerris\Provider\ConsumerInterface;
 use MattFerris\Provider\ProviderInterface;
+use Psr\Container\ContainerInterface as PsrContainerInterface;
+
 
 class Di implements ContainerInterface, ConsumerInterface
 {
@@ -59,10 +65,11 @@ class Di implements ContainerInterface, ConsumerInterface
      */
     protected $useDeepTypeResolution;
 
-    public function __construct()
-    {
+
+    public function __construct() {
         $this->set('DI', $this);
     }
+
 
     /**
      * Enable/disable deep type resolution on or off. By default, this feature
@@ -73,29 +80,28 @@ class Di implements ContainerInterface, ConsumerInterface
      * @param bool $status True to enable, false to disable
      * @return self
      */
-    public function setDeepTypeResolution($status)
-    {
+    public function setDeepTypeResolution(bool $status) {
         $this->useDeepTypeResolution = (bool)$status;
     }
+
 
     /**
      * @param array $parameters
      * @return ContainerInterface
      */
-    public function setParameters(array $parameters)
-    {
+    public function setParameters(array $parameters): self {
         if (is_null($this->parameters)) {
             $this->parameters = $parameters;
         }
         return $this;
     }
 
+
     /**
      * @param string $key
      * @return mixed
      */
-    public function getParameter($key)
-    {
+    public function getParameter(string $key) {
         if (isset($this->parameters[$key]) || array_key_exists($key, $this->parameters)) {
             return $this->parameters[$key];
         } else {
@@ -103,88 +109,108 @@ class Di implements ContainerInterface, ConsumerInterface
         }
     }
 
+
     /**
      * Setup a container definition. By default, all definitions are singletons,
      * but this can be changed via the $singleton aregument. Additionally, an
      * optional fourth argument, $type, can be specified to assist with type-
      * based injection. If no type is specified, then the container can't use
      * the definition for type-based injection unless the definition is simply
-     * an object (as opposed to a Closure). This is because the container won't
-     * know what type of of instance the definition will create.
+     * an object (as opposed to a Closure), or a class name. This is because the
+     * container won't know what type of of instance the definition will create.
      *
-     * @param string $key The name of the definition
-     * @param mixed $definition The definition (either an instance or Closure)
+     * @param string $id The ID of the definition
+     * @param mixed $definition The definition (instance, Closure, or class name)
      * @param bool $singleton Optional. True if singleton, false othewise. Default is true.
-     * @param string $type Optiona. The type (class) of the resulting instance.
+     * @param string $type Optional. The type (class) of the resulting instance.
+     * @param array $parameters Optional. Parameters for the factory closure (only used if $definition is a class name)
      * @return ContainerInterface The container instance
      */
-    public function set($key, $definition, $singleton = true, $type = null)
-    {
-        // make sure $key isn't already definied, otherwise throw an exception
-        if (!isset($this->definitions[$key])) {
-            $this->definitions[$key] = array(
-                'singleton' => $singleton,
-                'def' => $definition
-            );
+    public function set(
+        string $id,
+        $definition,
+        bool $singleton = true,
+        string $type = null,
+        array $parameters = []
+    ): self {
+        $class = null;
 
-            // if the definition is an instance, use it's types
+        // throw exception if the IDj already exists
+        if (isset($this->definitions[$id])) {
+            throw new DuplicateDefinitionException($id);
+        }
+
+        // if $definition is a class name, create a factory closure
+        if (is_string($definition) && class_exists($definition)) {
+            $class = $definition;
+            $definition = function (ContainerInterface $di) use ($class, $parameters) {
+                return $di->injectConstructor($class, $parameters);
+            };
+        }
+
+        $this->definitions[$id] = array(
+            'singleton' => $singleton,
+            'def' => $definition
+        );
+
+        if (is_null($class) && ! ($definition instanceof Closure)) {
             $class = get_class($definition);
-            if ($class !== 'Closure') {
-                $type = $class;
-                $ref = new \ReflectionClass($class);
-                $types = $ref->getInterfaceNames();
-                foreach ($types as $t) {
-                    if (!isset($this->types[$t])) {
-                        $this->types[$t] = array();
-                    }
-                    $this->types[$t][] = $key;
+        }
+
+        // if the definition isn't a closure, enumerate it's interfaces
+        if (!is_null($class)) {
+            $type = $class;
+            $ref = new ReflectionClass($class);
+            $types = $ref->getInterfaceNames();
+            foreach ($types as $t) {
+                if (!isset($this->types[$t])) {
+                    $this->types[$t] = array();
                 }
+                $this->types[$t][] = $id;
+            }
+        }
+
+        // if $type is specified, set the definition type
+        if (!is_null($type)) {
+            $this->definitions[$id]['type'] = $type;
+
+            if (!isset($this->types[$type])) {
+                $this->types[$type] = array();
             }
 
-            // if $type is specified, set the definition type
-            if (!is_null($type)) {
-                $this->definitions[$key]['type'] = $type;
-
-                if (!isset($this->types[$type])) {
-                    $this->types[$type] = array();
-                }
-
-                $this->types[$type][] = $key;
-            }
-        } else {
-            throw new DuplicateDefinitionException($key);
+            $this->types[$type][] = $id;
         }
 
         return $this;
     }
 
+
     /**
-     * @param string $key
+     * @param string $id The definition ID
      * @return object
      */
-    public function get($key)
-    {
-        // check if the key is delegated to another container
+    public function get(string $id) {
+        // check if the ID is delegated to another container
         foreach (array_keys($this->delegates) as $prefix) {
-            if (strpos($key, $prefix) === 0) {
-                return $this->delegates[$prefix]->get($key);
+            if (strpos($id, $prefix) === 0) {
+                return $this->delegates[$prefix]->get($id);
             }
         }
 
-        if (!isset($this->definitions[$key])) {
-            return null;
+        if (!isset($this->definitions[$id])) {
+            throw new NotFoundException($id);
         }
 
-        $def = $this->definitions[$key];
+        $def = $this->definitions[$id];
         $return = null;
 
-        if ($def['singleton'] === true && isset($this->instances[$key])) {
-            $return = $this->instances[$key];
+        if ($def['singleton'] === true && isset($this->instances[$id])) {
+            $return = $this->instances[$id];
         } else {
             if (is_callable($def['def'])) {
                 $return = $this->injectFunction($def['def'], array('di' => '%DI'));
                 if ($def['singleton'] === true) {
-                    $this->instances[$key] = $return;
+                    $this->instances[$id] = $return;
                 }
             } else {
                 $return = $def['def'];
@@ -194,40 +220,40 @@ class Di implements ContainerInterface, ConsumerInterface
         return $return;
     }
 
-    /**
-     * @param string $key
-     * @return bool
-     */
-    public function has($key)
-    {
-        // if key is delegated, ask delegate container
-        foreach (array_keys($this->delegates) as $prefix) {
-            if (strpos($key, $prefix) === 0) {
-                return $this->delegates[$prefix]->has($key);
-            }
-        }
-        return isset($this->definitions[$key]);
-    }
 
     /**
-     * Delegate a key prefix to another container
+     * @param string $id
+     * @return bool
+     */
+    public function has(string $id): bool {
+        // if key is delegated, ask delegate container
+        foreach (array_keys($this->delegates) as $prefix) {
+            if (strpos($id, $prefix) === 0) {
+                return $this->delegates[$prefix]->has($id);
+            }
+        }
+        return isset($this->definitions[$id]);
+    }
+
+
+    /**
+     * Delegate an ID prefix to another container
      *
      * @param string $prefix The prefix to delegate
-     * @param \Psr\Container\ContainerInterface $container The delegate
+     * @param PsrContainerInterface $container The delegate
      * @return self
      */
-    public function delegate($prefix, \Psr\Container\ContainerInterface $container)
-    {
+    public function delegate($prefix, PsrContainerInterface $container): self {
         $this->delegates[$prefix] = $container;
         return $this;
     }
+
 
     /**
      * @param string $prefix
      * @return array
      */
-    public function find($prefix)
-    {
+    public function find($prefix): array {
         $results = array();
         foreach ($this->definitions as $name => $def) {
             if (strpos($name, $prefix) === 0) {
@@ -237,23 +263,23 @@ class Di implements ContainerInterface, ConsumerInterface
         return $results;
     }
 
+
     /**
      * {@inheritDoc}
      */
-    public function register(ProviderInterface $provider)
-    {
+    public function register(ProviderInterface $provider) {
         $provider->provides($this);
     }
+
 
     /**
      * @param object $reflection
      * @param array $args
      * @return array
      */
-    protected function resolveArguments($reflection, array $args = array())
-    {
-        if (!($reflection instanceof \ReflectionMethod) && !($reflection instanceof \ReflectionFunction)) {
-            throw new \InvalidArgumentException(
+    protected function resolveArguments(object $reflection, array $args = array()): array {
+        if (!($reflection instanceof ReflectionMethod) && !($reflection instanceof ReflectionFunction)) {
+            throw new InvalidArgumentException(
                 '$reflection expects ReflectionMethod or ReflectionFunction'
             );
         }
@@ -286,12 +312,12 @@ class Di implements ContainerInterface, ConsumerInterface
         return $invokeArgs;
     }
 
+
     /**
      * @param mixed $arg
-     * @return array
+     * @return mixed
      */
-    protected function resolveArgument($arg)
-    {
+    protected function resolveArgument($arg) {
         /*
          * If the argument is an array, recursively resolve the array entries
          */
@@ -350,6 +376,7 @@ class Di implements ContainerInterface, ConsumerInterface
         return $invokeArg;
     }
 
+
     /**
      * Given a type (class), try and resolve the type using dependencies that
      * have been registered with the container. If that fails, try and
@@ -358,8 +385,7 @@ class Di implements ContainerInterface, ConsumerInterface
      * @param string $type
      * @return object
      */
-    public function resolveType($type)
-    {
+    public function resolveType(string $type): object {
         $object = null;
 
         // strip leading slashes
@@ -382,21 +408,21 @@ class Di implements ContainerInterface, ConsumerInterface
         return $object;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public function injectStaticMethod($class, $method, array $args = array())
-    {
-        $invokeArgs = $this->resolveArguments(new \ReflectionMethod($class, $method), $args);
-        return call_user_func_array(array($class, $method), $invokeArgs);
-    }
 
     /**
      * {@inheritDoc}
      */
-    public function injectConstructor($class, array $args = array())
-    {
-        $reflection = new \ReflectionClass($class);
+    public function injectStaticMethod(string $class, string $method, array $args = array()) {
+        $invokeArgs = $this->resolveArguments(new \ReflectionMethod($class, $method), $args);
+        return call_user_func_array(array($class, $method), $invokeArgs);
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    public function injectConstructor(string $class, array $args = array()): object {
+        $reflection = new ReflectionClass($class);
         if ($reflection->getConstructor() !== null) {
             $invokeArgs = $this->resolveArguments($reflection->getConstructor(), $args);
             return $reflection->newInstanceArgs($invokeArgs);
@@ -405,11 +431,11 @@ class Di implements ContainerInterface, ConsumerInterface
         }
     }
 
+
     /**
      * {@inheritDoc}
      */
-    public function injectMethod($instance, $method, array $args = array())
-    {
+    public function injectMethod(object $instance, string $method, array $args = array()) {
         if (!is_object($instance)) {
             throw new \InvalidArgumentException(
                 '$instance expects an instance of an object'
@@ -420,11 +446,11 @@ class Di implements ContainerInterface, ConsumerInterface
         return call_user_func_array(array($instance, $method), $invokeArgs);
     }
 
+
     /**
      * {@inheritDoc}
      */
-    public function injectFunction($function, array $args = array())
-    {
+    public function injectFunction($function, array $args = array()) {
         $functionDoesntExist = !is_object($function) && !function_exists($function);
         $objectIsNotClosure = is_object($function) && !($function instanceof \Closure);
 

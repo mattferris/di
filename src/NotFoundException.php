@@ -4,7 +4,7 @@
  * DI - A dependency injection library for PHP
  * www.bueller.ca/di
  *
- * DuplicateDefinitionException.php
+ * NotFoundException.php
  * @copyright Copyright (c) 2023 Matt Ferris
  * @author Matt Ferris <matt@bueller.ca>
  *
@@ -16,38 +16,32 @@ namespace MattFerris\Di;
 
 use Exception;
 use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 
 
-class DuplicateDefinitionException extends Exception implements ContainerExceptionInterface
+class NotFoundException extends Exception implements ContainerExceptionInterface, NotFoundExceptionInterface
 {
     /**
-     * @var string The duplicate entry ID
+     * @var string $id The entry ID that was not found in the container
      */
     protected $id;
 
+
     /**
-     * @param string $id The duplicate entry ID
+     * @param string $id The entry ID that was not found in the container
      */
     public function __construct(string $id) {
         $this->id = $id;
-        $msg = 'Duplicate definition for "'.$id.'"';
-        parent::__construct($msg);
+        parent::__construct('No definition found for "'.$id.'"');
     }
 
+
     /**
-     * Return the duplicate entry ID
+     * Return the entry ID that was not found in the container`
      *
-     * @return string The duplicate entry ID
+     * @return string $id The entry ID
      */
     public function getId(): string {
         return $this->id;
-    }
-
-
-    /**
-     * Alias for getId()
-     */
-    public function getKey(): string {
-        return $this->getId();
     }
 }

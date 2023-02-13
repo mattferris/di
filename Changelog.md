@@ -1,6 +1,18 @@
 Changelog
 =========
 
+1.1
+---
+
+* Support for PSR-11 (ContainerInteface)
+* `set()` now supports a class name in addition to a Closure or instance
+* Updated readme
+
+1.0
+---
+
+* Migrated to psr/container from container-interop/container-interop
+
 0.4
 ---
 

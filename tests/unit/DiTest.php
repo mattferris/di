@@ -2,12 +2,16 @@
 
 use MattFerris\Di\Di;
 use MattFerris\Di\ContainerInterface;
+use MattFerris\Di\DependencyResolutionException;
+use MattFerris\Di\DuplicateDefinitionException;
+use MattFerris\Di\NotFoundException;
 use MattFerris\Provider\ProviderInterface;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\TestCase;
 
-class DiTest extends PHPUnit_Framework_TestCase
+class DiTest extends TestCase
 {
-    public function testGetSet()
-    {
+    public function testGetSet() {
         // test set() with an instance
         $di = new Di();
         $obj = new stdClass();
@@ -23,6 +27,11 @@ class DiTest extends PHPUnit_Framework_TestCase
         }); 
         $this->assertEquals($di->get('Test')->foo, 'bar');
 
+        // test set() with a class name
+        $di = new Di();
+        $di->set('Test', DiTest_A::class);
+        $this->assertEquals($di->get('Test')->getDi(), $di);
+
         // test singleton
         $di = new Di();
         $di->set('Test', function () {
@@ -35,22 +44,29 @@ class DiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($obj->foo, 'bar');
     }
 
-    /**
-     * @testGetSet
-     * @expectedException MattFerris\Di\DuplicateDefinitionException
-     * @expectedExceptionMessage Duplicate definition for "DI"
-     */
-    public function testDuplicateDefinitionException()
-    {
+
+    #[Depends('testGetSet')
+    public function testGetWithNonExistentId() {
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage('No definition found for "Foo"');
+
+        $di = new Di();
+        var_dump($di->get('Foo'));
+    }
+
+
+    #[Depends('testGetSet')
+    public function testDuplicateDefinitionException() {
+        $this->expectException(DuplicateDefinitionException::class);
+        $this->expectExceptionMessage('Duplicate definition for "DI"');
+
         $di = new Di();
         $di->set('DI', new stdClass());
     }
 
-    /**
-     * @depends testGetSet
-     */
-    public function testFind()
-    {
+
+    #[Depends('testGetSet')
+    public function testFind() {
         $di = new Di();
         $di
             ->set('Foo.Foo', function ($di) {
@@ -72,15 +88,15 @@ class DiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('bar', $objs['Foo.Bar']->foo);
     }
 
-    public function testGetSetParameters()
-    {
+
+    public function testGetSetParameters() {
         $di = new Di();
         $di->setParameters(array('foo' => 'bar'));
         $this->assertEquals($di->getParameter('foo'), 'bar');
     }
 
-    public function testInjectStaticMethod()
-    {
+
+    public function testInjectStaticMethod() {
         $di = new Di();
         $di->setParameters(array('bar' => 'bar'));
         $class = 'DiTest_A';
@@ -101,11 +117,9 @@ class DiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($return['bar'], 'bar');
     }
 
-    /**
-     * @depends testInjectStaticMethod
-     */
-    public function testInjectConstructor()
-    {
+
+    #[Depends('testInjectStaticMethod')
+    public function testInjectConstructor() {
         $di = new Di();
         $class = 'DiTest_A';
 
@@ -113,11 +127,9 @@ class DiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($a->getDi(), $di);
     }
 
-    /**
-     * @depends testInjectConstructor
-     */
-    public function testInjectConsructorWithNoConstructor()
-    {
+
+    #[Depends('testInjectConstructor')
+    public function testInjectConsructorWithNoConstructor() {
         $di = new Di();
         $class = 'DiTest_B';
 
@@ -125,33 +137,27 @@ class DiTest extends PHPUnit_Framework_TestCase
         $this->assertTrue(is_object($a));
     }
 
-    /**
-     * @depends testInjectStaticMethod
-     */
-    public function testInjectMethod()
-    {
+
+    #[Depends('testInjectStaticMethod')
+    public function testInjectMethod() {
         $di = new Di();
         $a = new DiTest_A($di);
         $return = $di->injectMethod($a, 'test', array('di' => '%DI'));
         $this->assertEquals($return['di'], $di);
     }
 
-    /**
-     * @depends testInjectStaticMethod
-     */
-    public function testInjectFunction()
-    {
+
+    #[Depends('testInjectStaticMethod')
+    public function testInjectFunction() {
         $di = new Di();
         $this->assertEquals($di->injectFunction(function (Di $di) {
             return $di;
         }, array('di' => '%DI')), $di);
     }
 
-    /**
-     * @depends testInjectStaticMethod
-     */
-    public function testTypeResolution()
-    {
+
+    #[Depends('testInjectStaticMethod')
+    public function testTypeResolution() {
         $di = new Di();
 
         // resolve type based on supplied arguments
@@ -174,13 +180,12 @@ class DiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($di->get('Foo'), $di);
     }
 
-    /**
-     * @depends testTypeResolution
-     * @expectedException MattFerris\Di\DependencyResolutionException
-     * @expectedExceptionMessage Failed to resolve dependency "stdClass"
-     */
-    public function testDependencyResolutionException()
-    {
+
+    #[Depends('testTypeResolution')
+    public function testDependencyResolutionException() {
+        $this->expectException(DependencyResolutionException::class);
+        $this->expectExceptionMessage('Failed to resolve dependency "stdClass"');
+
         $di = new Di();
         $di->set('Foo', function (\stdClass $bar) {
             return 'baz';
@@ -188,11 +193,9 @@ class DiTest extends PHPUnit_Framework_TestCase
         $di->get('Foo');
     }
 
-    /**
-     * @depends testTypeResolution
-     */
-    public function testDeepTypeResolution()
-    {
+
+    #[Depends('testTypeResolution')
+    public function testDeepTypeResolution() {
         $di = new Di();
         $di->setDeepTypeResolution(true);
 
@@ -203,13 +206,12 @@ class DiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(get_class($di->get('Foo')), 'DiTest_A');
     }
 
-    /**
-     * @depends testDeepTypeResolution
-     * @expectedException MattFerris\Di\DependencyResolutionException
-     * @expectedExceptionMessage Failed to resolve dependency "DiTest_D"
-     */
-    public function testDeepTypeResolutionFailure()
-    {
+
+    #[Depends('testDeepTypeResolution')
+    public function testDeepTypeResolutionFailure() {
+        $this->expectException(DependencyResolutionException::class);
+        $this->expectExceptionMessage('Failed to resolve dependency "DiTest_D"');
+
         $di = new Di();
         $di->setDeepTypeResolution(true);
 
@@ -220,11 +222,9 @@ class DiTest extends PHPUnit_Framework_TestCase
         $di->get('Foo');
     }
 
-    /**
-     * @depends testGetSet
-     */
-    public function testDelegation()
-    {
+
+    #[Depends('testGetSet')
+    public function testDelegation() {
         $diA = new Di();
         $diB = new Di();
         $diA->delegate('Foo', $diB);
@@ -241,16 +241,15 @@ class DiTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(get_class($diA->get('Foo.Bar')), 'stdClass');
     }
 
-    /**
-     * @depends testGetSet
-     */
-    public function testRegister()
-    {
+
+    #[Depends('testGetSet');
+    public function testRegister() {
         $di = new Di();
         $di->register(new DiTest_Provider());
         $this->assertInstanceOf('stdClass', $di->get('test'));
     }
 }
+
 
 class DiTest_A
 {
